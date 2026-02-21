@@ -9,7 +9,7 @@ export default function ReporteInventario() {
   const [items, setItems] = useState<Producto[]>([]);
   const [categorias, setCategorias] = useState<{ id: number; nombre: string }[]>([]);
   const [tipos, setTipos] = useState<{ id: number; nombre: string }[]>([]);
-  const [marcas, setMarcas] = useState<{ id: number; nombre: string; activo: number }[]>([]);
+  const [marcasList, setMarcasList] = useState<{ id: number; nombre: string; activo: number }[]>([]);
   const [proveedoresList, setProveedoresList] = useState<Proveedor[]>([]);
   const [filtroCategoria, setFiltroCategoria] = useState<string>('');
   const [filtroTipo, setFiltroTipo] = useState<string>('');
@@ -49,7 +49,7 @@ export default function ReporteInventario() {
   useEffect(() => {
     productos.categorias().then(setCategorias);
     productos.tipos().then(setTipos);
-    marcas.list(false).then(setMarcas);
+    marcas.list(false).then(setMarcasList);
     proveedores.list().then(setProveedoresList);
   }, []);
 
@@ -96,7 +96,7 @@ export default function ReporteInventario() {
         </select>
         <select value={filtroMarca} onChange={(e) => setFiltroMarca(e.target.value)} className="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
           <option value="">Todas las marcas</option>
-          {marcas.map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+          {marcasList.map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
         </select>
         <select value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)} className="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
           <option value="">Todos los tipos</option>
