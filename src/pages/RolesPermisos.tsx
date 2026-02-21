@@ -64,9 +64,7 @@ export default function RolesPermisos() {
                 <span className="font-semibold text-gray-900 capitalize">{rolNombre(rol.nombre)}</span>
                 {rol.descripcion && <span className="text-gray-500 text-sm ml-2">— {rol.descripcion}</span>}
               </div>
-              {rol.nombre === 'administrador' ? (
-                <span className="text-sm text-gray-500">Los permisos del administrador no se pueden modificar.</span>
-              ) : (
+              {rol.nombre !== 'administrador' && (
                 <button
                   type="button"
                   onClick={() => (editingRolId === rol.id ? setEditingRolId(null) : openEdit(rol))}
@@ -112,11 +110,6 @@ export default function RolesPermisos() {
                     Cancelar
                   </button>
                 </div>
-              </div>
-            )}
-            {editingRolId !== rol.id && (
-              <div className="px-4 py-2 text-sm text-gray-500">
-                Permisos actuales: {rol.permiso_ids?.length ?? 0} asignados
               </div>
             )}
           </div>
