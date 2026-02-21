@@ -21,10 +21,26 @@ export async function api<T>(
   return data as T;
 }
 
+/** API sin token para endpoints públicos (catálogo, registro) */
+export async function apiPublic<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || data.errors?.[0]?.msg || 'Error en la petición');
+  return data as T;
+}
+
 export const auth = {
   login: (email: string, password: string) =>
     api<{ token: string; user: User }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   me: () => api<User>('/auth/me'),
+  updateProfile: (body: { nombre?: string; apellido?: string }) =>
+    api<{ message: string }>('/auth/perfil', { method: 'PUT', body: JSON.stringify(body) }),
+  registroCliente: (body: { email: string; password: string; nombre: string; apellido?: string; telefono?: string }) =>
+    api<{ message: string }>('/auth/registro-cliente', { method: 'POST', body: JSON.stringify(body) }),
 };
 
 export const usuarios = {
@@ -38,12 +54,18 @@ export const usuarios = {
 };
 
 export const productos = {
-  list: (params?: { categoria_id?: number; tipo_id?: number; activo?: number }) => {
+  list: (params?: { categoria_id?: number; tipo_id?: number; marca_id?: number; activo?: number }) => {
     const entries = params
       ? Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])
       : [];
     const q = entries.length ? new URLSearchParams(entries as [string, string][]).toString() : '';
     return api<Producto[]>(`/productos${q ? `?${q}` : ''}`);
+  },
+  /** Catálogo público (sin auth) - usa /public/productos si existe, sino /productos */
+  listPublic: (params?: { categoria_id?: number; tipo_id?: number; marca_id?: number }) => {
+    const entries = params ? Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]) : [];
+    const q = entries.length ? new URLSearchParams(entries as [string, string][]).toString() : '';
+    return apiPublic<Producto[]>(`/public/productos${q ? `?${q}` : ''}`);
   },
   get: (id: number) => api<Producto>(`/productos/${id}`),
   categorias: () => api<{ id: number; nombre: string }[]>('/productos/categorias'),
@@ -55,6 +77,10 @@ export const productos = {
     api<{ message: string }>(`/productos/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   entrada: (body: { producto_id: number; cantidad: number; proveedor_id?: number; observaciones?: string }) =>
     api<{ stock_actual: number }>('/productos/entrada', { method: 'POST', body: JSON.stringify(body) }),
+  salida: (body: { producto_id: number; cantidad: number; motivo?: string }) =>
+    api<{ stock_actual: number }>('/productos/salida', { method: 'POST', body: JSON.stringify(body) }),
+  reportarDanado: (body: { producto_id: number; cantidad: number; motivo?: string }) =>
+    api<{ message: string }>('/productos/danados', { method: 'POST', body: JSON.stringify(body) }),
 };
 
 export const marcas = {
@@ -94,6 +120,54 @@ export interface RolConPermisos {
   nombre: string;
   descripcion: string | null;
   permiso_ids: number[];
+}
+
+export const reportes = {
+  inventario: (params?: { categoria_id?: number; tipo_id?: number; marca_id?: number; proveedor_id?: number }) => {
+    const entries = params ? Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]) : [];
+    const q = entries.length ? new URLSearchParams(entries as [string, string][]).toString() : '';
+    const listParams = params ? { categoria_id: params.categoria_id, tipo_id: params.tipo_id } : undefined;
+    return api<Producto[]>(`/reportes/inventario${q ? `?${q}` : ''}`).catch(() => productos.list(listParams));
+  },
+  ventas: (params?: { desde?: string; hasta?: string; vendedor_id?: number; producto_id?: number }) => {
+    const entries = params ? Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]) : [];
+    const q = entries.length ? new URLSearchParams(entries as [string, string][]).toString() : '';
+    return api<ReporteVenta[]>(`/reportes/ventas${q ? `?${q}` : ''}`);
+  },
+  compras: (params?: { desde?: string; hasta?: string; proveedor_id?: number }) => {
+    const entries = params ? Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]) : [];
+    const q = entries.length ? new URLSearchParams(entries as [string, string][]).toString() : '';
+    return api<ReporteCompra[]>(`/reportes/compras${q ? `?${q}` : ''}`);
+  },
+  utilidades: (params?: { desde?: string; hasta?: string }) => {
+    const entries = params ? Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]) : [];
+    const q = entries.length ? new URLSearchParams(entries as [string, string][]).toString() : '';
+    return api<ReporteUtilidad>(`/reportes/utilidades${q ? `?${q}` : ''}`);
+  },
+};
+
+export interface ReporteVenta {
+  id: number;
+  fecha: string;
+  total: number;
+  vendedor_nombre: string;
+  cliente_nombre?: string;
+  productos?: { nombre: string; cantidad: number; subtotal: number }[];
+}
+
+export interface ReporteCompra {
+  id: number;
+  fecha: string;
+  total: number;
+  proveedor_nombre: string;
+  usuario_nombre: string;
+}
+
+export interface ReporteUtilidad {
+  ventas_totales: number;
+  compras_totales: number;
+  utilidad: number;
+  margen?: number;
 }
 
 export const roles = {

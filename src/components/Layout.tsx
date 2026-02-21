@@ -41,9 +41,14 @@ export default function Layout() {
               <nav className="flex gap-1">
                 <NavLink to="/" end className={navClass}>Inicio</NavLink>
                 {(hasPermission('catalogo_ver') || hasPermission('catalogo_editar')) && <NavLink to="/catalogo" end={false} className={navClass}>Catálogo</NavLink>}
-                {hasPermission('entrada_inventario') && <NavLink to="/entrada" className={navClass}>Entrada inventario</NavLink>}
+                {hasPermission('entrada_inventario') && <NavLink to="/entrada" className={navClass}>Entrada</NavLink>}
+                {hasPermission('entrada_inventario') && <NavLink to="/salida" className={navClass}>Salida</NavLink>}
+                {hasPermission('entrada_inventario') && <NavLink to="/productos-danados" className={navClass}>Productos dañados</NavLink>}
                 {(hasPermission('proveedores_ver') || hasPermission('proveedores_editar')) && <NavLink to="/proveedores" className={navClass}>Proveedores</NavLink>}
+                {user?.rol === 'administrador' && <NavLink to="/reporte-inventario" className={navClass}>Reporte inventario</NavLink>}
+                {user?.rol === 'administrador' && <NavLink to="/reportes" className={navClass}>Reportes</NavLink>}
                 {hasPermission('usuarios_gestionar') && <NavLink to="/usuarios" className={navClass}>Usuarios</NavLink>}
+                <NavLink to="/perfil" className={navClass}>Perfil</NavLink>
               </nav>
             </div>
             <div className="flex items-center gap-4">

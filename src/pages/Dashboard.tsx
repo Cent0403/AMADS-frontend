@@ -88,6 +88,34 @@ export default function Dashboard() {
             <p className="text-sm text-gray-600 mt-1">Asignar permisos específicos a cada rol.</p>
           </Link>
         )}
+        {user?.rol === 'administrador' && (
+          <>
+            <Link to="/reporte-inventario" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
+              <h3 className="font-semibold text-gray-900">Reporte de inventario</h3>
+              <p className="text-sm text-gray-600 mt-1">Ver existencias, filtros y exportar.</p>
+            </Link>
+            <Link to="/reportes" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
+              <h3 className="font-semibold text-gray-900">Reportes financieros</h3>
+              <p className="text-sm text-gray-600 mt-1">Ventas, compras y utilidades.</p>
+            </Link>
+          </>
+        )}
+        {hasPermission('entrada_inventario') && (
+          <Link to="/salida" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
+            <h3 className="font-semibold text-gray-900">Salida de inventario</h3>
+            <p className="text-sm text-gray-600 mt-1">Registrar salida por venta.</p>
+          </Link>
+        )}
+        {hasPermission('entrada_inventario') && (
+          <Link to="/productos-danados" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
+            <h3 className="font-semibold text-gray-900">Productos dañados</h3>
+            <p className="text-sm text-gray-600 mt-1">Reportar defectuosos o dañados.</p>
+          </Link>
+        )}
+        <Link to="/perfil" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
+          <h3 className="font-semibold text-gray-900">Mi perfil</h3>
+          <p className="text-sm text-gray-600 mt-1">Actualizar datos de contacto.</p>
+        </Link>
       </div>
     </div>
   );
