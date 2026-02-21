@@ -16,44 +16,60 @@ export default function Dashboard() {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Bienvenido, {user?.nombre}</h1>
 
       {stockBajo.length > 0 && (
-        <div className="mb-8 bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <h2 className="text-lg font-semibold text-amber-800 mb-2">⚠️ Notificación: stock bajo</h2>
-          <p className="text-sm text-amber-700 mb-3">
-            Los siguientes productos tienen <strong>stock actual igual o menor al stock mínimo</strong> definido. Revise y registre entradas a tiempo.
-          </p>
+        <div className="mb-8 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden shadow-sm">
+          <div className="px-5 py-4 border-b border-amber-200/60 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-200 text-amber-800">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+              </span>
+              <div>
+                <h2 className="text-lg font-semibold text-amber-900">Productos con stock bajo</h2>
+                <p className="text-sm text-amber-700">Stock actual ≤ mínimo definido. Registre entradas para reabastecer.</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {hasPermission('catalogo_ver') && <Link to="/catalogo" className="px-3 py-1.5 text-sm font-medium text-amber-800 bg-amber-100 rounded-lg hover:bg-amber-200 transition-colors">Ir al catálogo</Link>}
+              {hasPermission('entrada_inventario') && <Link to="/entrada" className="px-3 py-1.5 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors">Registrar entrada</Link>}
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-amber-200">
-                  <th className="text-left py-2">Producto</th>
-                  <th className="text-left py-2">Marca</th>
-                  <th className="text-left py-2">Categoría</th>
-                  <th className="text-right py-2">Stock actual</th>
-                  <th className="text-right py-2">Stock mínimo</th>
-                  <th className="text-right py-2">Faltante</th>
+                <tr className="bg-amber-100/50">
+                  <th className="text-left py-3 px-4 font-semibold text-amber-900">Producto</th>
+                  <th className="text-left py-3 px-4 font-semibold text-amber-900">Marca</th>
+                  <th className="text-left py-3 px-4 font-semibold text-amber-900">Categoría</th>
+                  <th className="text-right py-3 px-4 font-semibold text-amber-900">Stock actual</th>
+                  <th className="text-right py-3 px-4 font-semibold text-amber-900">Mínimo</th>
+                  <th className="text-right py-3 px-4 font-semibold text-amber-900">Faltante</th>
+                  <th className="text-center py-3 px-4 font-semibold text-amber-900">Estado</th>
                 </tr>
               </thead>
               <tbody>
-                {stockBajo.map((s) => (
-                  <tr key={s.id} className="border-b border-amber-100">
-                    <td className="py-2">{s.modelo} {s.codigo && `(${s.codigo})`}</td>
-                    <td className="py-2">{s.marca}</td>
-                    <td className="py-2">{s.categoria}</td>
-                    <td className="text-right py-2">{s.stock_actual}</td>
-                    <td className="text-right py-2">{s.stock_minimo}</td>
-                    <td className="text-right py-2 font-medium text-amber-700">{s.faltante}</td>
-                  </tr>
-                ))}
+                {stockBajo.map((s) => {
+                  const critico = s.stock_actual === 0;
+                  return (
+                    <tr key={s.id} className={`border-b border-amber-100/80 hover:bg-amber-50/50 transition-colors ${critico ? 'bg-red-50/30' : ''}`}>
+                      <td className="py-3 px-4 font-medium text-gray-900">{s.modelo} {s.codigo && <span className="text-gray-500">({s.codigo})</span>}</td>
+                      <td className="py-3 px-4 text-gray-700">{s.marca}</td>
+                      <td className="py-3 px-4 text-gray-600">{s.categoria}</td>
+                      <td className="py-3 px-4 text-right font-medium">{s.stock_actual}</td>
+                      <td className="py-3 px-4 text-right text-gray-600">{s.stock_minimo}</td>
+                      <td className="py-3 px-4 text-right font-semibold text-amber-700">{s.faltante}</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${critico ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${critico ? 'bg-red-500' : 'bg-amber-500'}`} />
+                          {critico ? 'Agotado' : 'Bajo'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-          {(hasPermission('catalogo_ver') || hasPermission('entrada_inventario')) && (
-            <div className="mt-3">
-              {hasPermission('catalogo_ver') && <Link to="/catalogo" className="text-primary-600 hover:underline text-sm">Ir al catálogo</Link>}
-              {hasPermission('catalogo_ver') && hasPermission('entrada_inventario') && ' · '}
-              {hasPermission('entrada_inventario') && <Link to="/entrada" className="text-primary-600 hover:underline text-sm">Registrar entrada</Link>}
-            </div>
-          )}
         </div>
       )}
 
