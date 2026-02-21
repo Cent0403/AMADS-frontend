@@ -162,7 +162,7 @@ export default function Catalogo() {
                           className={`text-sm font-medium ${p.activo ? 'text-green-600 hover:underline' : 'text-gray-500 hover:underline'}`}
                           title={p.activo ? 'Desactivar producto (no se elimina)' : 'Activar producto'}
                         >
-                          {p.activo ? 'Sí · Desactivar' : 'No · Activar'}
+                          {p.activo ? 'Sí' : 'No'}
                         </button>
                       </td>
                     )}
