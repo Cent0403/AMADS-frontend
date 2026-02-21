@@ -41,12 +41,26 @@ export default function ProveedorDetalle() {
   const [, setProductoInfo] = useState<Producto | null>(null);
   const [compras, setCompras] = useState<Compra[]>([]);
   const [compraExpandida, setCompraExpandida] = useState<number | null>(null);
+  const [busquedaCompras, setBusquedaCompras] = useState('');
   const [loading, setLoading] = useState(true);
   const [productoSeleccionado, setProductoSeleccionado] = useState<number | ''>('');
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
   const [asociando, setAsociando] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const comprasFiltradas = busquedaCompras.trim()
+    ? compras.filter((c) => {
+        const q = busquedaCompras.trim().toLowerCase();
+        const fechaStr = formatFecha(c.fecha_compra).toLowerCase();
+        const totalStr = c.total != null ? String(c.total) : '';
+        const usuarioStr = (c.usuario_nombre || '').toLowerCase();
+        const obsStr = (c.observaciones || '').toLowerCase();
+        const itemsStr = (c.items || []).map((i) => i.producto_nombre.toLowerCase()).join(' ');
+        const texto = [fechaStr, totalStr, usuarioStr, obsStr, itemsStr].join(' ');
+        return texto.includes(q);
+      })
+    : compras;
 
   const productosFiltrados = busquedaProducto.trim()
     ? productosDisponibles.filter((p) => {
@@ -283,30 +297,48 @@ export default function ProveedorDetalle() {
       <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">Historial de compras</h2>
         <p className="text-xs text-gray-500 mb-3">Compras registradas al dar entrada de inventario con este proveedor.</p>
+        {compras.length > 0 && (
+          <div className="mb-3">
+            <input
+              type="text"
+              value={busquedaCompras}
+              onChange={(e) => setBusquedaCompras(e.target.value)}
+              placeholder="Buscar por fecha, total, usuario, observaciones o producto..."
+              className="w-full max-w-md border border-gray-300 rounded-md px-3 py-1.5 text-sm"
+            />
+            {busquedaCompras.trim() && (
+              <p className="text-xs text-gray-500 mt-1">
+                {comprasFiltradas.length} de {compras.length} compras
+              </p>
+            )}
+          </div>
+        )}
         {compras.length === 0 ? (
           <p className="text-gray-500 text-sm">No hay compras registradas. Al registrar una entrada de inventario eligiendo este proveedor, aparecerá aquí.</p>
+        ) : comprasFiltradas.length === 0 ? (
+          <p className="text-gray-500 text-sm">No hay compras que coincidan con la búsqueda.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-2">Fecha</th>
-                  <th className="text-right py-2">Total</th>
-                  <th className="text-left py-2">Registrado por</th>
-                  <th className="text-left py-2">Observaciones</th>
+                  <th className="text-left py-2 pr-4">Fecha</th>
+                  <th className="text-right py-2 pl-4 pr-6">Total</th>
+                  <th className="text-left py-2 pl-2 pr-4">Registrado por</th>
+                  <th className="text-left py-2 pl-2">Observaciones</th>
                   <th className="text-left py-2 w-24"></th>
                 </tr>
               </thead>
               <tbody>
-                {compras.map((c) => (
+                {comprasFiltradas.map((c) => (
                   <Fragment key={c.id}>
                     <tr
                       className={`border-b border-gray-100 ${(c.items?.length ?? 0) > 0 ? 'cursor-pointer hover:bg-gray-50' : ''}`}
                       onClick={() => (c.items?.length ? setCompraExpandida(compraExpandida === c.id ? null : c.id) : undefined)}
                     >
-                      <td className="py-2 align-middle">{formatFecha(c.fecha_compra)}</td>
-                      <td className="text-right py-2 align-middle">{c.total != null ? `$${Number(c.total).toLocaleString()}` : '-'}</td>
-                      <td className="py-2 align-middle">{c.usuario_nombre || '-'}</td>
+                      <td className="py-2 align-middle pr-4">{formatFecha(c.fecha_compra)}</td>
+                      <td className="text-right py-2 align-middle pl-4 pr-6">{c.total != null ? `$${Number(c.total).toLocaleString()}` : '-'}</td>
+                      <td className="py-2 align-middle pl-2 pr-4">{c.usuario_nombre || '-'}</td>
                       <td className="py-2 max-w-[200px] truncate align-middle" title={c.observaciones || undefined}>
                         {c.observaciones || '-'}
                       </td>
