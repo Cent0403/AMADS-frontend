@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, Fragment } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { PERMISOS } from '../constants/permissions';
@@ -7,6 +7,16 @@ import { useConfirm } from '../context/ConfirmContext';
 import { proveedores, productos, Proveedor, Producto } from '../api/client';
 
 type ProductoAsoc = { id: number; codigo: string; modelo: string; marca: string; categoria: string };
+
+type CompraItem = { producto_id: number; producto_nombre: string; cantidad: number; precio_unitario: number; subtotal: number };
+type Compra = {
+  id: number;
+  fecha_compra: string;
+  total: number;
+  usuario_nombre: string;
+  observaciones?: string | null;
+  items?: CompraItem[];
+};
 
 function formatFecha(isoString: string): string {
   try {
@@ -29,7 +39,8 @@ export default function ProveedorDetalle() {
   const [productosAsoc, setProductosAsoc] = useState<ProductoAsoc[]>([]);
   const [productosDisponibles, setProductosDisponibles] = useState<ProductoAsoc[]>([]);
   const [, setProductoInfo] = useState<Producto | null>(null);
-  const [compras, setCompras] = useState<{ id: number; fecha_compra: string; total: number; usuario_nombre: string }[]>([]);
+  const [compras, setCompras] = useState<Compra[]>([]);
+  const [compraExpandida, setCompraExpandida] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [productoSeleccionado, setProductoSeleccionado] = useState<number | ''>('');
   const [busquedaProducto, setBusquedaProducto] = useState('');
@@ -282,15 +293,61 @@ export default function ProveedorDetalle() {
                   <th className="text-left py-2">Fecha</th>
                   <th className="text-right py-2">Total</th>
                   <th className="text-left py-2">Registrado por</th>
+                  <th className="text-left py-2">Observaciones</th>
+                  <th className="text-left py-2 w-24"></th>
                 </tr>
               </thead>
               <tbody>
                 {compras.map((c) => (
-                  <tr key={c.id} className="border-b border-gray-100">
-                    <td className="py-2">{formatFecha(c.fecha_compra)}</td>
-                    <td className="text-right py-2">{c.total != null ? `$${Number(c.total).toLocaleString()}` : '-'}</td>
-                    <td className="py-2">{c.usuario_nombre || '-'}</td>
-                  </tr>
+                  <Fragment key={c.id}>
+                    <tr
+                      className={`border-b border-gray-100 ${(c.items?.length ?? 0) > 0 ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                      onClick={() => (c.items?.length ? setCompraExpandida(compraExpandida === c.id ? null : c.id) : undefined)}
+                    >
+                      <td className="py-2 align-middle">{formatFecha(c.fecha_compra)}</td>
+                      <td className="text-right py-2 align-middle">{c.total != null ? `$${Number(c.total).toLocaleString()}` : '-'}</td>
+                      <td className="py-2 align-middle">{c.usuario_nombre || '-'}</td>
+                      <td className="py-2 max-w-[200px] truncate align-middle" title={c.observaciones || undefined}>
+                        {c.observaciones || '-'}
+                      </td>
+                      <td className="py-2 align-middle">
+                        {(c.items?.length ?? 0) > 0 && (
+                          <span className="text-primary-600 text-xs whitespace-nowrap hover:underline">
+                            {compraExpandida === c.id ? '▲ Ocultar' : '▼ Ver detalle'}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                    {compraExpandida === c.id && c.items && c.items.length > 0 && (
+                      <tr key={`${c.id}-detalle`} className="bg-gray-50">
+                        <td colSpan={5} className="py-3 px-4">
+                          <div className="text-xs">
+                            <p className="font-medium text-gray-700 mb-2">Productos de la compra</p>
+                            <table className="min-w-full">
+                              <thead>
+                                <tr className="text-gray-500">
+                                  <th className="text-left py-1">Producto</th>
+                                  <th className="text-right py-1">Cant.</th>
+                                  <th className="text-right py-1">Precio unit.</th>
+                                  <th className="text-right py-1">Subtotal</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {c.items.map((item) => (
+                                  <tr key={item.producto_id} className="border-t border-gray-100">
+                                    <td className="py-1">{item.producto_nombre}</td>
+                                    <td className="text-right py-1">{item.cantidad}</td>
+                                    <td className="text-right py-1">${Number(item.precio_unitario).toLocaleString()}</td>
+                                    <td className="text-right py-1">${Number(item.subtotal).toLocaleString()}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

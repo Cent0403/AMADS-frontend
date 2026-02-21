@@ -97,7 +97,18 @@ export const proveedores = {
   get: (id: number) => api<Proveedor>(`/proveedores/${id}`),
   productos: (id: number) => api<{ id: number; codigo: string; modelo: string; marca: string; categoria: string }[]>(`/proveedores/${id}/productos`),
   productosDisponibles: (id: number) => api<{ id: number; codigo: string; modelo: string; marca: string; categoria: string }[]>(`/proveedores/${id}/productos-disponibles`),
-  compras: (id: number) => api<{ id: number; fecha_compra: string; total: number; usuario_nombre: string }[]>(`/proveedores/${id}/compras`),
+  compras: (id: number) =>
+    api<
+      {
+        id: number;
+        fecha_compra: string;
+        total: number;
+        usuario_nombre: string;
+        observaciones?: string | null;
+        created_at?: string | null;
+        items?: { producto_id: number; producto_nombre: string; cantidad: number; precio_unitario: number; subtotal: number }[];
+      }[]
+    >(`/proveedores/${id}/compras`),
   create: (body: ProveedorForm) => api<{ id: number }>('/proveedores', { method: 'POST', body: JSON.stringify(body) }),
   update: (id: number, body: Partial<ProveedorForm & { activo?: boolean }>) =>
     api<{ message: string }>(`/proveedores/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
