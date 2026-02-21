@@ -134,6 +134,7 @@ export interface RolConPermisos {
 }
 
 export const reportes = {
+  vendedores: () => api<{ id: number; nombre: string; apellido?: string }[]>('/reportes/vendedores'),
   inventario: (params?: { categoria_id?: number; tipo_id?: number; marca_id?: number; proveedor_id?: number }) => {
     const entries = params ? Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]) : [];
     const q = entries.length ? new URLSearchParams(entries as [string, string][]).toString() : '';
@@ -145,7 +146,7 @@ export const reportes = {
     const q = entries.length ? new URLSearchParams(entries as [string, string][]).toString() : '';
     return api<ReporteVenta[]>(`/reportes/ventas${q ? `?${q}` : ''}`);
   },
-  compras: (params?: { desde?: string; hasta?: string; proveedor_id?: number }) => {
+  compras: (params?: { desde?: string; hasta?: string; proveedor_id?: number; producto_id?: number }) => {
     const entries = params ? Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]) : [];
     const q = entries.length ? new URLSearchParams(entries as [string, string][]).toString() : '';
     return api<ReporteCompra[]>(`/reportes/compras${q ? `?${q}` : ''}`);
