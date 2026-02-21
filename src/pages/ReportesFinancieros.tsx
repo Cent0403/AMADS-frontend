@@ -180,7 +180,7 @@ export default function ReportesFinancieros() {
 
         <div className="border-t border-gray-100 pt-5">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Filtros</p>
-          <div className="flex flex-wrap gap-x-6 gap-y-4 items-end">
+          <div className="flex flex-wrap gap-x-6 gap-y-4 items-center">
             <div className="flex gap-4 items-end">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Desde</label>
@@ -418,7 +418,7 @@ export default function ReportesFinancieros() {
                 </div>
               </>
             )}
-            <div className="ml-2">
+            <div className="self-center">
               <button type="button" onClick={cargar} disabled={loading} className="px-5 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 text-sm font-medium">
                 {loading ? 'Cargando...' : 'Generar'}
               </button>
