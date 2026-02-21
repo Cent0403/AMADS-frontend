@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { reportes, ReporteVenta, ReporteCompra, ReporteUtilidad } from '../api/client';
+import { PERMISOS } from '../constants/permissions';
 import { useAuth } from '../context/AuthContext';
 import { exportCSV, printToPDF } from '../utils/export';
 
 type Tab = 'ventas' | 'compras' | 'utilidades';
 
 export default function ReportesFinancieros() {
-  const { isAdmin } = useAuth();
+  const { hasPermission } = useAuth();
   const [tab, setTab] = useState<Tab>('ventas');
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
@@ -17,7 +18,7 @@ export default function ReportesFinancieros() {
   const [error, setError] = useState('');
 
   const cargar = useCallback(async () => {
-    if (!isAdmin) return;
+    if (!hasPermission(PERMISOS.REPORTES_VER)) return;
     setLoading(true);
     setError('');
     try {
@@ -40,7 +41,7 @@ export default function ReportesFinancieros() {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin, tab, desde, hasta]);
+  }, [hasPermission, tab, desde, hasta]);
 
   useEffect(() => {
     cargar();
@@ -73,8 +74,8 @@ export default function ReportesFinancieros() {
     }
   };
 
-  if (!isAdmin) {
-    return <p className="text-gray-500">Solo administradores pueden generar estos reportes.</p>;
+  if (!hasPermission(PERMISOS.REPORTES_VER)) {
+    return <p className="text-gray-500">No tiene permisos para generar estos reportes.</p>;
   }
 
   return (

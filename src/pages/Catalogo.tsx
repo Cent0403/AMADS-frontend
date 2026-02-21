@@ -1,13 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { PERMISOS } from '../constants/permissions';
 import { useToast } from '../context/ToastContext';
 import { productos, Producto } from '../api/client';
 
 export default function Catalogo() {
   const { hasPermission } = useAuth();
   const { showToast } = useToast();
-  const puedeEditar = hasPermission('catalogo_editar');
+  const puedeEditar = hasPermission(PERMISOS.CATALOGO_EDITAR);
   const [items, setItems] = useState<Producto[]>([]);
   const [categorias, setCategorias] = useState<{ id: number; nombre: string }[]>([]);
   const [tipos, setTipos] = useState<{ id: number; nombre: string }[]>([]);

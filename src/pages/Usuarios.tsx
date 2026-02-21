@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { PERMISOS } from '../constants/permissions';
 import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { usuarios as apiUsuarios, Usuario } from '../api/client';
@@ -113,7 +114,7 @@ export default function Usuarios() {
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Usuarios del sistema</h1>
         <div className="flex gap-2">
-          {hasPermission('permisos_asignar') && (
+          {hasPermission(PERMISOS.PERMISOS_ASIGNAR) && (
             <Link to="/usuarios/roles-permisos" className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-gray-700">
               Administrar roles y permisos
             </Link>

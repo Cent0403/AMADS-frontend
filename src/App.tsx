@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { PERMISOS } from './constants/permissions';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -43,22 +44,22 @@ export default function App() {
         }
       >
         <Route index element={<Dashboard />} />
-        <Route path="catalogo" element={<PrivateRoute permission="catalogo_ver"><Catalogo /></PrivateRoute>} />
-        <Route path="catalogo/marcas" element={<PrivateRoute permission="catalogo_editar"><Marcas /></PrivateRoute>} />
-        <Route path="catalogo/nuevo" element={<PrivateRoute permission="catalogo_editar"><ProductoForm /></PrivateRoute>} />
-        <Route path="catalogo/editar/:id" element={<PrivateRoute permission="catalogo_editar"><ProductoForm /></PrivateRoute>} />
-        <Route path="entrada" element={<PrivateRoute permission="entrada_inventario"><EntradaInventario /></PrivateRoute>} />
-        <Route path="salida" element={<PrivateRoute permission="entrada_inventario"><SalidaInventario /></PrivateRoute>} />
-        <Route path="productos-danados" element={<PrivateRoute permission="entrada_inventario"><ProductosDanados /></PrivateRoute>} />
-        <Route path="reporte-inventario" element={<PrivateRoute><ReporteInventario /></PrivateRoute>} />
-        <Route path="reportes" element={<PrivateRoute><ReportesFinancieros /></PrivateRoute>} />
+        <Route path="catalogo" element={<PrivateRoute permission={PERMISOS.CATALOGO_VER}><Catalogo /></PrivateRoute>} />
+        <Route path="catalogo/marcas" element={<PrivateRoute permission={PERMISOS.CATALOGO_EDITAR}><Marcas /></PrivateRoute>} />
+        <Route path="catalogo/nuevo" element={<PrivateRoute permission={PERMISOS.CATALOGO_EDITAR}><ProductoForm /></PrivateRoute>} />
+        <Route path="catalogo/editar/:id" element={<PrivateRoute permission={PERMISOS.CATALOGO_EDITAR}><ProductoForm /></PrivateRoute>} />
+        <Route path="entrada" element={<PrivateRoute permission={PERMISOS.ENTRADA_INVENTARIO}><EntradaInventario /></PrivateRoute>} />
+        <Route path="salida" element={<PrivateRoute permission={PERMISOS.ENTRADA_INVENTARIO}><SalidaInventario /></PrivateRoute>} />
+        <Route path="productos-danados" element={<PrivateRoute permission={PERMISOS.ENTRADA_INVENTARIO}><ProductosDanados /></PrivateRoute>} />
+        <Route path="reporte-inventario" element={<PrivateRoute permission={PERMISOS.REPORTES_VER}><ReporteInventario /></PrivateRoute>} />
+        <Route path="reportes" element={<PrivateRoute permission={PERMISOS.REPORTES_VER}><ReportesFinancieros /></PrivateRoute>} />
         <Route path="perfil" element={<PrivateRoute><Perfil /></PrivateRoute>} />
-        <Route path="proveedores" element={<PrivateRoute permission="proveedores_ver"><Proveedores /></PrivateRoute>} />
-        <Route path="proveedores/nuevo" element={<PrivateRoute permission="proveedores_editar"><ProveedorForm /></PrivateRoute>} />
-        <Route path="proveedores/editar/:id" element={<PrivateRoute permission="proveedores_editar"><ProveedorForm /></PrivateRoute>} />
-        <Route path="proveedores/:id" element={<PrivateRoute permission="proveedores_ver"><ProveedorDetalle /></PrivateRoute>} />
-        <Route path="usuarios" element={<PrivateRoute permission="usuarios_gestionar"><Usuarios /></PrivateRoute>} />
-        <Route path="usuarios/roles-permisos" element={<PrivateRoute permission="permisos_asignar"><RolesPermisos /></PrivateRoute>} />
+        <Route path="proveedores" element={<PrivateRoute permission={PERMISOS.PROVEEDORES_VER}><Proveedores /></PrivateRoute>} />
+        <Route path="proveedores/nuevo" element={<PrivateRoute permission={PERMISOS.PROVEEDORES_EDITAR}><ProveedorForm /></PrivateRoute>} />
+        <Route path="proveedores/editar/:id" element={<PrivateRoute permission={PERMISOS.PROVEEDORES_EDITAR}><ProveedorForm /></PrivateRoute>} />
+        <Route path="proveedores/:id" element={<PrivateRoute permission={PERMISOS.PROVEEDORES_VER}><ProveedorDetalle /></PrivateRoute>} />
+        <Route path="usuarios" element={<PrivateRoute permission={PERMISOS.USUARIOS_GESTIONAR}><Usuarios /></PrivateRoute>} />
+        <Route path="usuarios/roles-permisos" element={<PrivateRoute permission={PERMISOS.PERMISOS_ASIGNAR}><RolesPermisos /></PrivateRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

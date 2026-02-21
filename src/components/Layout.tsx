@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { productos, StockBajo } from '../api/client';
+import { PERMISOS } from '../constants/permissions';
 
 const icons = {
   home: (
@@ -103,11 +104,11 @@ export default function Layout() {
       isActive ? 'bg-primary-600 text-white' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
     }`;
 
-  const canCatalog = hasPermission('catalogo_ver') || hasPermission('catalogo_editar');
-  const canInventory = hasPermission('entrada_inventario');
-  const canProviders = hasPermission('proveedores_ver') || hasPermission('proveedores_editar');
-  const canUsers = hasPermission('usuarios_gestionar');
-  const isAdmin = user?.rol === 'administrador';
+  const canCatalog = hasPermission(PERMISOS.CATALOGO_VER) || hasPermission(PERMISOS.CATALOGO_EDITAR);
+  const canInventory = hasPermission(PERMISOS.ENTRADA_INVENTARIO);
+  const canProviders = hasPermission(PERMISOS.PROVEEDORES_VER) || hasPermission(PERMISOS.PROVEEDORES_EDITAR);
+  const canUsers = hasPermission(PERMISOS.USUARIOS_GESTIONAR);
+  const canReportes = hasPermission(PERMISOS.REPORTES_VER);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -170,7 +171,7 @@ export default function Layout() {
                     Proveedores
                   </NavLink>
                 )}
-                {isAdmin && (
+                {canReportes && (
                   <div className="relative">
                     <button
                       type="button"
@@ -333,7 +334,7 @@ export default function Layout() {
                   Proveedores
                 </NavLink>
               )}
-              {isAdmin && (
+              {canReportes && (
                 <>
                   <p className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Reportes</p>
                   <NavLink to="/reporte-inventario" className={navLinkClass}>

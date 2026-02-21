@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { productos, Producto } from '../api/client';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { PERMISOS } from '../constants/permissions';
 
 export default function ProductosDanados() {
   const { hasPermission } = useAuth();
@@ -49,7 +50,7 @@ export default function ProductosDanados() {
     }
   };
 
-  if (!hasPermission('entrada_inventario')) {
+  if (!hasPermission(PERMISOS.ENTRADA_INVENTARIO)) {
     return <p className="text-gray-500">No tiene permisos para reportar productos dañados.</p>;
   }
 

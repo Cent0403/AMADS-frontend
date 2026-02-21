@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { productos, StockBajo } from '../api/client';
+import { PERMISOS } from '../constants/permissions';
 
 export default function Dashboard() {
   const { user, hasPermission } = useAuth();
@@ -30,8 +31,8 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex gap-2">
-              {hasPermission('catalogo_ver') && <Link to="/catalogo" className="px-3 py-1.5 text-sm font-medium text-amber-800 bg-amber-100 rounded-lg hover:bg-amber-200 transition-colors">Ir al catálogo</Link>}
-              {hasPermission('entrada_inventario') && <Link to="/entrada" className="px-3 py-1.5 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors">Registrar entrada</Link>}
+              {hasPermission(PERMISOS.CATALOGO_VER) && <Link to="/catalogo" className="px-3 py-1.5 text-sm font-medium text-amber-800 bg-amber-100 rounded-lg hover:bg-amber-200 transition-colors">Ir al catálogo</Link>}
+              {hasPermission(PERMISOS.ENTRADA_INVENTARIO) && <Link to="/entrada" className="px-3 py-1.5 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors">Registrar entrada</Link>}
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -74,37 +75,37 @@ export default function Dashboard() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {(hasPermission('catalogo_ver') || hasPermission('catalogo_editar')) && (
+        {(hasPermission(PERMISOS.CATALOGO_VER) || hasPermission(PERMISOS.CATALOGO_EDITAR)) && (
           <Link to="/catalogo" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
             <h3 className="font-semibold text-gray-900">Catálogo de llantas</h3>
             <p className="text-sm text-gray-600 mt-1">Gestionar marcas, modelos, precios y stock mínimo.</p>
           </Link>
         )}
-        {hasPermission('entrada_inventario') && (
+        {hasPermission(PERMISOS.ENTRADA_INVENTARIO) && (
           <Link to="/entrada" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
             <h3 className="font-semibold text-gray-900">Entrada de inventario</h3>
             <p className="text-sm text-gray-600 mt-1">Registrar entrada de llantas y productos.</p>
           </Link>
         )}
-        {(hasPermission('proveedores_ver') || hasPermission('proveedores_editar')) && (
+        {(hasPermission(PERMISOS.PROVEEDORES_VER) || hasPermission(PERMISOS.PROVEEDORES_EDITAR)) && (
           <Link to="/proveedores" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
             <h3 className="font-semibold text-gray-900">Proveedores</h3>
             <p className="text-sm text-gray-600 mt-1">Ver y administrar proveedores.</p>
           </Link>
         )}
-        {hasPermission('usuarios_gestionar') && (
+        {hasPermission(PERMISOS.USUARIOS_GESTIONAR) && (
           <Link to="/usuarios" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
             <h3 className="font-semibold text-gray-900">Usuarios</h3>
             <p className="text-sm text-gray-600 mt-1">Crear, editar y asignar roles.</p>
           </Link>
         )}
-        {hasPermission('permisos_asignar') && (
+        {hasPermission(PERMISOS.PERMISOS_ASIGNAR) && (
           <Link to="/usuarios/roles-permisos" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
             <h3 className="font-semibold text-gray-900">Roles y permisos</h3>
             <p className="text-sm text-gray-600 mt-1">Asignar permisos específicos a cada rol.</p>
           </Link>
         )}
-        {user?.rol === 'administrador' && (
+        {hasPermission(PERMISOS.REPORTES_VER) && (
           <>
             <Link to="/reporte-inventario" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
               <h3 className="font-semibold text-gray-900">Reporte de inventario</h3>
@@ -116,13 +117,13 @@ export default function Dashboard() {
             </Link>
           </>
         )}
-        {hasPermission('entrada_inventario') && (
+        {hasPermission(PERMISOS.ENTRADA_INVENTARIO) && (
           <Link to="/salida" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
             <h3 className="font-semibold text-gray-900">Salida de inventario</h3>
             <p className="text-sm text-gray-600 mt-1">Registrar salida por venta.</p>
           </Link>
         )}
-        {hasPermission('entrada_inventario') && (
+        {hasPermission(PERMISOS.ENTRADA_INVENTARIO) && (
           <Link to="/productos-danados" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
             <h3 className="font-semibold text-gray-900">Productos dañados</h3>
             <p className="text-sm text-gray-600 mt-1">Reportar defectuosos o dañados.</p>

@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { productos, proveedores, marcas, Producto, Proveedor } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { PERMISOS } from '../constants/permissions';
 import { exportCSV, printToPDF } from '../utils/export';
 
 export default function ReporteInventario() {
-  const { isAdmin } = useAuth();
+  const { hasPermission } = useAuth();
   const [items, setItems] = useState<Producto[]>([]);
   const [categorias, setCategorias] = useState<{ id: number; nombre: string }[]>([]);
   const [tipos, setTipos] = useState<{ id: number; nombre: string }[]>([]);
@@ -76,8 +77,8 @@ export default function ReporteInventario() {
     printToPDF('Reporte de inventario', 'reporte-inventario-tabla');
   };
 
-  if (!isAdmin) {
-    return <p className="text-gray-500">Solo administradores pueden ver este reporte.</p>;
+  if (!hasPermission(PERMISOS.REPORTES_VER)) {
+    return <p className="text-gray-500">No tiene permisos para ver este reporte.</p>;
   }
 
   return (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { PERMISOS } from '../constants/permissions';
 import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { proveedores, Proveedor } from '../api/client';
@@ -9,7 +10,7 @@ export default function Proveedores() {
   const { hasPermission } = useAuth();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
-  const puedeEditar = hasPermission('proveedores_editar');
+  const puedeEditar = hasPermission(PERMISOS.PROVEEDORES_EDITAR);
   const [items, setItems] = useState<Proveedor[]>([]);
   const [loading, setLoading] = useState(true);
 

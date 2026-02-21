@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { productos, Producto } from '../api/client';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { PERMISOS } from '../constants/permissions';
 
 export default function SalidaInventario() {
   const { hasPermission } = useAuth();
@@ -48,7 +49,7 @@ export default function SalidaInventario() {
     }
   };
 
-  if (!hasPermission('entrada_inventario')) {
+  if (!hasPermission(PERMISOS.ENTRADA_INVENTARIO)) {
     return <p className="text-gray-500">No tiene permisos para registrar salidas.</p>;
   }
 

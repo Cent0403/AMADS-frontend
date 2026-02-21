@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { PERMISOS } from '../constants/permissions';
 import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { proveedores, productos, Proveedor, Producto } from '../api/client';
@@ -23,7 +24,7 @@ export default function ProveedorDetalle() {
   const { hasPermission } = useAuth();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
-  const puedeEditar = hasPermission('proveedores_editar');
+  const puedeEditar = hasPermission(PERMISOS.PROVEEDORES_EDITAR);
   const [proveedor, setProveedor] = useState<Proveedor | null>(null);
   const [productosAsoc, setProductosAsoc] = useState<ProductoAsoc[]>([]);
   const [productosDisponibles, setProductosDisponibles] = useState<ProductoAsoc[]>([]);
