@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { reportes, proveedores, productos, ReporteVenta, ReporteCompra, ReporteUtilidad } from '../api/client';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { reportes, proveedores, productos, marcas, ReporteVenta, ReporteCompra, ReporteUtilidad } from '../api/client';
 import { PERMISOS } from '../constants/permissions';
 import { useAuth } from '../context/AuthContext';
 import { exportCSV, printToPDF } from '../utils/export';
@@ -23,10 +23,21 @@ export default function ReportesFinancieros() {
   const [hasta, setHasta] = useState('');
   const [vendedorId, setVendedorId] = useState<number | ''>('');
   const [productoId, setProductoId] = useState<number | ''>('');
+  const [marcaId, setMarcaId] = useState<number | ''>('');
   const [proveedorId, setProveedorId] = useState<number | ''>('');
+  const [busquedaProducto, setBusquedaProducto] = useState('');
+  const [busquedaMarca, setBusquedaMarca] = useState('');
+  const [busquedaProveedor, setBusquedaProveedor] = useState('');
+  const [mostrarDropdownProducto, setMostrarDropdownProducto] = useState(false);
+  const [mostrarDropdownMarca, setMostrarDropdownMarca] = useState(false);
+  const [mostrarDropdownProveedor, setMostrarDropdownProveedor] = useState(false);
   const [vendedores, setVendedores] = useState<{ id: number; nombre: string; apellido?: string }[]>([]);
-  const [productosList, setProductosList] = useState<{ id: number; modelo: string; marca_nombre?: string }[]>([]);
+  const [productosList, setProductosList] = useState<{ id: number; modelo: string; marca_nombre?: string; codigo?: string }[]>([]);
+  const [marcasList, setMarcasList] = useState<{ id: number; nombre: string }[]>([]);
   const [proveedoresList, setProveedoresList] = useState<{ id: number; nombre: string }[]>([]);
+  const dropdownProductoRef = useRef<HTMLDivElement>(null);
+  const dropdownMarcaRef = useRef<HTMLDivElement>(null);
+  const dropdownProveedorRef = useRef<HTMLDivElement>(null);
   const [ventas, setVentas] = useState<ReporteVenta[]>([]);
   const [compras, setCompras] = useState<ReporteCompra[]>([]);
   const [utilidad, setUtilidad] = useState<ReporteUtilidad | null>(null);
@@ -39,8 +50,35 @@ export default function ReportesFinancieros() {
     if (!hasPermission(PERMISOS.REPORTES_VER) || !esAdmin) return;
     reportes.vendedores().then(setVendedores).catch(() => setVendedores([]));
     productos.list().then((p) => setProductosList(p)).catch(() => setProductosList([]));
+    marcas.list(false).then((m) => setMarcasList(m)).catch(() => setMarcasList([]));
     proveedores.list().then((p) => setProveedoresList(p)).catch(() => setProveedoresList([]));
   }, [hasPermission, esAdmin]);
+
+  const productosFiltrados = busquedaProducto.trim()
+    ? productosList.filter((p) => {
+        const q = busquedaProducto.trim().toLowerCase();
+        const texto = [p.marca_nombre, p.modelo, p.codigo].filter(Boolean).join(' ').toLowerCase();
+        return texto.includes(q);
+      })
+    : productosList;
+
+  const marcasFiltradas = busquedaMarca.trim()
+    ? marcasList.filter((m) => m.nombre.toLowerCase().includes(busquedaMarca.trim().toLowerCase()))
+    : marcasList;
+
+  const proveedoresFiltrados = busquedaProveedor.trim()
+    ? proveedoresList.filter((p) => p.nombre.toLowerCase().includes(busquedaProveedor.trim().toLowerCase()))
+    : proveedoresList;
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownProductoRef.current && !dropdownProductoRef.current.contains(e.target as Node)) setMostrarDropdownProducto(false);
+      if (dropdownMarcaRef.current && !dropdownMarcaRef.current.contains(e.target as Node)) setMostrarDropdownMarca(false);
+      if (dropdownProveedorRef.current && !dropdownProveedorRef.current.contains(e.target as Node)) setMostrarDropdownProveedor(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const cargar = useCallback(async () => {
     if (!hasPermission(PERMISOS.REPORTES_VER)) return;
@@ -53,11 +91,13 @@ export default function ReportesFinancieros() {
       if (tab === 'ventas') {
         if (vendedorId) params.vendedor_id = vendedorId;
         if (productoId) params.producto_id = productoId;
+        if (marcaId) params.marca_id = marcaId;
         const data = await reportes.ventas(params);
         setVentas(Array.isArray(data) ? data : []);
       } else if (tab === 'compras') {
         if (proveedorId) params.proveedor_id = proveedorId;
         if (productoId) params.producto_id = productoId;
+        if (marcaId) params.marca_id = marcaId;
         const data = await reportes.compras(params);
         setCompras(Array.isArray(data) ? data : []);
       } else {
@@ -72,7 +112,7 @@ export default function ReportesFinancieros() {
     } finally {
       setLoading(false);
     }
-  }, [hasPermission, tab, desde, hasta, vendedorId, productoId, proveedorId]);
+  }, [hasPermission, tab, desde, hasta, vendedorId, productoId, marcaId, proveedorId]);
 
   useEffect(() => {
     cargar();
@@ -118,82 +158,275 @@ export default function ReportesFinancieros() {
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Reportes de ventas, compras y utilidades</h1>
       <p className="text-gray-600 mb-6">
-        Filtre por fecha, vendedor y producto. Visualice los datos en pantalla y exporte en PDF o Excel.
+        Filtre por fecha, vendedor, marca y producto. Visualice los datos en pantalla y exporte en PDF o Excel.
       </p>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-        <div className="flex flex-wrap gap-4 items-end mb-4">
+      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+        <div className="mb-6">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Tipo de reporte</p>
           <div className="flex gap-2">
             {(['ventas', 'compras', 'utilidades'] as Tab[]).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setTab(t)}
-                className={`px-4 py-2 rounded-md text-sm font-medium ${tab === t ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === t ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
               >
                 {t === 'ventas' ? 'Ventas' : t === 'compras' ? 'Compras' : 'Utilidades'}
               </button>
             ))}
           </div>
-          <div className="flex flex-wrap gap-3 items-center">
-            <div>
-              <label className="block text-xs text-gray-500 mb-0.5">Desde</label>
-              <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-0.5">Hasta</label>
-              <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className="border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
+        </div>
+
+        <div className="border-t border-gray-100 pt-5">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Filtros</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-4 items-end">
+            <div className="flex gap-4 items-end">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Desde</label>
+                <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="border border-gray-300 rounded-md px-3 py-2 text-sm w-[140px]" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Hasta</label>
+                <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className="border border-gray-300 rounded-md px-3 py-2 text-sm w-[140px]" />
+              </div>
             </div>
             {tab === 'ventas' && (
               <>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-0.5">Vendedor</label>
-                  <select value={vendedorId} onChange={(e) => setVendedorId(e.target.value ? Number(e.target.value) : '')} className="border border-gray-300 rounded-md px-3 py-1.5 text-sm min-w-[140px]">
+                  <label className="block text-xs text-gray-500 mb-1">Vendedor</label>
+                  <select value={vendedorId} onChange={(e) => setVendedorId(e.target.value ? Number(e.target.value) : '')} className="border border-gray-300 rounded-md px-3 py-2 text-sm w-[160px]">
                     <option value="">Todos</option>
                     {vendedores.map((v) => (
                       <option key={v.id} value={v.id}>{v.nombre} {v.apellido || ''}</option>
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-0.5">Producto</label>
-                  <select value={productoId} onChange={(e) => setProductoId(e.target.value ? Number(e.target.value) : '')} className="border border-gray-300 rounded-md px-3 py-1.5 text-sm min-w-[180px]">
-                    <option value="">Todos</option>
-                    {productosList.map((p) => (
-                      <option key={p.id} value={p.id}>{p.marca_nombre || ''} {p.modelo}</option>
-                    ))}
-                  </select>
+                <div ref={dropdownMarcaRef} className="relative w-[180px]">
+                  <label className="block text-xs text-gray-500 mb-1">Marca</label>
+                  <input
+                    type="text"
+                    value={busquedaMarca}
+                    onChange={(e) => {
+                      setBusquedaMarca(e.target.value);
+                      setMostrarDropdownMarca(true);
+                      if (!e.target.value) setMarcaId('');
+                    }}
+                    onFocus={() => marcasList.length > 0 && setMostrarDropdownMarca(true)}
+                    placeholder="Buscar marca..."
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  />
+                  {mostrarDropdownMarca && marcasFiltradas.length > 0 && (
+                    <ul className="absolute z-10 mt-1 w-full max-h-40 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                      <li
+                        role="option"
+                        onClick={() => { setMarcaId(''); setBusquedaMarca(''); setMostrarDropdownMarca(false); }}
+                        className="px-3 py-2 text-sm cursor-pointer hover:bg-primary-50"
+                      >
+                        Todos
+                      </li>
+                      {marcasFiltradas.map((m) => (
+                        <li
+                          key={m.id}
+                          role="option"
+                          aria-selected={marcaId === m.id}
+                          onClick={() => { setMarcaId(m.id); setBusquedaMarca(m.nombre); setMostrarDropdownMarca(false); }}
+                          className={`px-3 py-2 text-sm cursor-pointer hover:bg-primary-50 ${marcaId === m.id ? 'bg-primary-50 text-primary-700' : ''}`}
+                        >
+                          {m.nombre}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {mostrarDropdownMarca && busquedaMarca.trim() && marcasFiltradas.length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full px-3 py-2 text-sm text-gray-500 bg-white border border-gray-200 rounded-md shadow-lg">
+                      No hay marcas que coincidan.
+                    </div>
+                  )}
+                </div>
+                <div ref={dropdownProductoRef} className="relative w-[240px]">
+                  <label className="block text-xs text-gray-500 mb-1">Producto</label>
+                  <input
+                    type="text"
+                    value={busquedaProducto}
+                    onChange={(e) => {
+                      setBusquedaProducto(e.target.value);
+                      setMostrarDropdownProducto(true);
+                      if (!e.target.value) setProductoId('');
+                    }}
+                    onFocus={() => productosList.length > 0 && setMostrarDropdownProducto(true)}
+                    placeholder="Buscar por marca, modelo o código..."
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  />
+                  {mostrarDropdownProducto && productosFiltrados.length > 0 && (
+                    <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                      <li
+                        role="option"
+                        onClick={() => { setProductoId(''); setBusquedaProducto(''); setMostrarDropdownProducto(false); }}
+                        className="px-3 py-2 text-sm cursor-pointer hover:bg-primary-50"
+                      >
+                        Todos
+                      </li>
+                      {productosFiltrados.map((p) => (
+                        <li
+                          key={p.id}
+                          role="option"
+                          aria-selected={productoId === p.id}
+                          onClick={() => { setProductoId(p.id); setBusquedaProducto(`${p.marca_nombre || ''} ${p.modelo}`.trim()); setMostrarDropdownProducto(false); }}
+                          className={`px-3 py-2 text-sm cursor-pointer hover:bg-primary-50 ${productoId === p.id ? 'bg-primary-50 text-primary-700' : ''}`}
+                        >
+                          {p.marca_nombre || ''} {p.modelo}{p.codigo ? ` - ${p.codigo}` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {mostrarDropdownProducto && busquedaProducto.trim() && productosFiltrados.length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full px-3 py-2 text-sm text-gray-500 bg-white border border-gray-200 rounded-md shadow-lg">
+                      No hay productos que coincidan.
+                    </div>
+                  )}
                 </div>
               </>
             )}
             {tab === 'compras' && (
               <>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-0.5">Proveedor</label>
-                  <select value={proveedorId} onChange={(e) => setProveedorId(e.target.value ? Number(e.target.value) : '')} className="border border-gray-300 rounded-md px-3 py-1.5 text-sm min-w-[160px]">
-                    <option value="">Todos</option>
-                    {proveedoresList.map((p) => (
-                      <option key={p.id} value={p.id}>{p.nombre}</option>
-                    ))}
-                  </select>
+                <div ref={dropdownProveedorRef} className="relative w-[200px]">
+                  <label className="block text-xs text-gray-500 mb-1">Proveedor</label>
+                  <input
+                    type="text"
+                    value={busquedaProveedor}
+                    onChange={(e) => {
+                      setBusquedaProveedor(e.target.value);
+                      setMostrarDropdownProveedor(true);
+                      if (!e.target.value) setProveedorId('');
+                    }}
+                    onFocus={() => proveedoresList.length > 0 && setMostrarDropdownProveedor(true)}
+                    placeholder="Buscar proveedor..."
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  />
+                  {mostrarDropdownProveedor && proveedoresFiltrados.length > 0 && (
+                    <ul className="absolute z-10 mt-1 w-full max-h-40 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                      <li
+                        role="option"
+                        onClick={() => { setProveedorId(''); setBusquedaProveedor(''); setMostrarDropdownProveedor(false); }}
+                        className="px-3 py-2 text-sm cursor-pointer hover:bg-primary-50"
+                      >
+                        Todos
+                      </li>
+                      {proveedoresFiltrados.map((p) => (
+                        <li
+                          key={p.id}
+                          role="option"
+                          aria-selected={proveedorId === p.id}
+                          onClick={() => { setProveedorId(p.id); setBusquedaProveedor(p.nombre); setMostrarDropdownProveedor(false); }}
+                          className={`px-3 py-2 text-sm cursor-pointer hover:bg-primary-50 ${proveedorId === p.id ? 'bg-primary-50 text-primary-700' : ''}`}
+                        >
+                          {p.nombre}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {mostrarDropdownProveedor && busquedaProveedor.trim() && proveedoresFiltrados.length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full px-3 py-2 text-sm text-gray-500 bg-white border border-gray-200 rounded-md shadow-lg">
+                      No hay proveedores que coincidan.
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-0.5">Producto</label>
-                  <select value={productoId} onChange={(e) => setProductoId(e.target.value ? Number(e.target.value) : '')} className="border border-gray-300 rounded-md px-3 py-1.5 text-sm min-w-[180px]">
-                    <option value="">Todos</option>
-                    {productosList.map((p) => (
-                      <option key={p.id} value={p.id}>{p.marca_nombre || ''} {p.modelo}</option>
-                    ))}
-                  </select>
+                <div ref={dropdownMarcaRef} className="relative w-[180px]">
+                  <label className="block text-xs text-gray-500 mb-1">Marca</label>
+                  <input
+                    type="text"
+                    value={busquedaMarca}
+                    onChange={(e) => {
+                      setBusquedaMarca(e.target.value);
+                      setMostrarDropdownMarca(true);
+                      if (!e.target.value) setMarcaId('');
+                    }}
+                    onFocus={() => marcasList.length > 0 && setMostrarDropdownMarca(true)}
+                    placeholder="Buscar marca..."
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  />
+                  {mostrarDropdownMarca && marcasFiltradas.length > 0 && (
+                    <ul className="absolute z-10 mt-1 w-full max-h-40 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                      <li
+                        role="option"
+                        onClick={() => { setMarcaId(''); setBusquedaMarca(''); setMostrarDropdownMarca(false); }}
+                        className="px-3 py-2 text-sm cursor-pointer hover:bg-primary-50"
+                      >
+                        Todos
+                      </li>
+                      {marcasFiltradas.map((m) => (
+                        <li
+                          key={m.id}
+                          role="option"
+                          aria-selected={marcaId === m.id}
+                          onClick={() => { setMarcaId(m.id); setBusquedaMarca(m.nombre); setMostrarDropdownMarca(false); }}
+                          className={`px-3 py-2 text-sm cursor-pointer hover:bg-primary-50 ${marcaId === m.id ? 'bg-primary-50 text-primary-700' : ''}`}
+                        >
+                          {m.nombre}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {mostrarDropdownMarca && busquedaMarca.trim() && marcasFiltradas.length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full px-3 py-2 text-sm text-gray-500 bg-white border border-gray-200 rounded-md shadow-lg">
+                      No hay marcas que coincidan.
+                    </div>
+                  )}
+                </div>
+                <div ref={dropdownProductoRef} className="relative w-[240px]">
+                  <label className="block text-xs text-gray-500 mb-1">Producto</label>
+                  <input
+                    type="text"
+                    value={busquedaProducto}
+                    onChange={(e) => {
+                      setBusquedaProducto(e.target.value);
+                      setMostrarDropdownProducto(true);
+                      if (!e.target.value) setProductoId('');
+                    }}
+                    onFocus={() => productosList.length > 0 && setMostrarDropdownProducto(true)}
+                    placeholder="Buscar por marca, modelo o código..."
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  />
+                  {mostrarDropdownProducto && productosFiltrados.length > 0 && (
+                    <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                      <li
+                        role="option"
+                        onClick={() => { setProductoId(''); setBusquedaProducto(''); setMostrarDropdownProducto(false); }}
+                        className="px-3 py-2 text-sm cursor-pointer hover:bg-primary-50"
+                      >
+                        Todos
+                      </li>
+                      {productosFiltrados.map((p) => (
+                        <li
+                          key={p.id}
+                          role="option"
+                          aria-selected={productoId === p.id}
+                          onClick={() => { setProductoId(p.id); setBusquedaProducto(`${p.marca_nombre || ''} ${p.modelo}`.trim()); setMostrarDropdownProducto(false); }}
+                          className={`px-3 py-2 text-sm cursor-pointer hover:bg-primary-50 ${productoId === p.id ? 'bg-primary-50 text-primary-700' : ''}`}
+                        >
+                          {p.marca_nombre || ''} {p.modelo}{p.codigo ? ` - ${p.codigo}` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {mostrarDropdownProducto && busquedaProducto.trim() && productosFiltrados.length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full px-3 py-2 text-sm text-gray-500 bg-white border border-gray-200 rounded-md shadow-lg">
+                      No hay productos que coincidan.
+                    </div>
+                  )}
                 </div>
               </>
             )}
-            <button type="button" onClick={cargar} disabled={loading} className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 text-sm">
-              {loading ? 'Cargando...' : 'Generar'}
-            </button>
+            <div className="ml-2">
+              <button type="button" onClick={cargar} disabled={loading} className="px-5 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 text-sm font-medium">
+                {loading ? 'Cargando...' : 'Generar'}
+              </button>
+            </div>
           </div>
         </div>
-        <div className="flex gap-2 pt-2 border-t border-gray-100">
+
+        <div className="flex flex-wrap gap-3 mt-5 pt-5 border-t border-gray-100">
           <button
             type="button"
             onClick={() => {
