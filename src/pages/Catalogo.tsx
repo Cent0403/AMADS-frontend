@@ -14,6 +14,7 @@ export default function Catalogo() {
   const [tipos, setTipos] = useState<{ id: number; nombre: string }[]>([]);
   const [filtroCategoria, setFiltroCategoria] = useState<string>('');
   const [filtroTipo, setFiltroTipo] = useState<string>('');
+  const [busqueda, setBusqueda] = useState<string>('');
   const [soloActivos, setSoloActivos] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
 
@@ -25,6 +26,27 @@ export default function Catalogo() {
     if (soloActivos) params.activo = 1;
     productos.list(params).then(setItems).finally(() => setLoading(false));
   }, [filtroCategoria, filtroTipo, soloActivos]);
+
+  const itemsFiltrados = busqueda.trim()
+    ? items.filter((p) => {
+        const q = busqueda.trim().toLowerCase();
+        const texto = [
+          p.codigo,
+          p.modelo,
+          p.marca_nombre,
+          p.categoria_nombre,
+          p.tipo_nombre,
+          p.medida,
+          p.indice_carga,
+          p.indice_velocidad,
+          p.color,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return texto.includes(q);
+      })
+    : items;
 
   useEffect(() => {
     productos.categorias().then(setCategorias);
@@ -63,6 +85,13 @@ export default function Catalogo() {
 
       <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6 flex flex-wrap gap-4 items-center">
         <span className="font-medium text-gray-700">Filtros:</span>
+        <input
+          type="search"
+          placeholder="Buscar por código, modelo, marca, medida..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="flex-1 min-w-[200px] border border-gray-300 rounded-md px-3 py-1.5 text-sm placeholder:text-gray-400"
+        />
         <select
           value={filtroCategoria}
           onChange={(e) => setFiltroCategoria(e.target.value)}
@@ -111,7 +140,7 @@ export default function Catalogo() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {items.map((p) => (
+                {itemsFiltrados.map((p) => (
                   <tr key={p.id} className={!p.activo ? 'bg-gray-50' : ''}>
                     <td className="px-4 py-3 text-sm">{p.codigo || '-'} / {p.modelo}</td>
                     <td className="px-4 py-3 text-sm">{p.marca_nombre}</td>
@@ -145,8 +174,10 @@ export default function Catalogo() {
               </tbody>
             </table>
           </div>
-          {items.length === 0 && (
-            <p className="p-6 text-center text-gray-500">No hay productos con los filtros seleccionados.</p>
+          {(items.length === 0 || itemsFiltrados.length === 0) && (
+            <p className="p-6 text-center text-gray-500">
+              {items.length === 0 ? 'No hay productos con los filtros seleccionados.' : 'No hay productos que coincidan con la búsqueda.'}
+            </p>
           )}
         </div>
       )}
