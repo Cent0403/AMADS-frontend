@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { PERMISOS } from '../constants/permissions';
@@ -32,7 +32,18 @@ export default function ProveedorDetalle() {
   const [compras, setCompras] = useState<{ id: number; fecha_compra: string; total: number; usuario_nombre: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [productoSeleccionado, setProductoSeleccionado] = useState<number | ''>('');
+  const [busquedaProducto, setBusquedaProducto] = useState('');
+  const [mostrarDropdown, setMostrarDropdown] = useState(false);
   const [asociando, setAsociando] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const productosFiltrados = busquedaProducto.trim()
+    ? productosDisponibles.filter((p) => {
+        const q = busquedaProducto.trim().toLowerCase();
+        const texto = [p.codigo, p.modelo, p.marca, p.categoria].filter(Boolean).join(' ').toLowerCase();
+        return texto.includes(q);
+      })
+    : productosDisponibles;
 
   const cargar = useCallback(() => {
     if (!id) return;
@@ -63,13 +74,25 @@ export default function ProveedorDetalle() {
     setLoading(!proveedor && id !== undefined);
   }, [proveedor, id]);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setMostrarDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const asociarProducto = async () => {
     if (!id || !productoSeleccionado) return;
     setAsociando(true);
     try {
       await proveedores.asociarProducto(Number(id), Number(productoSeleccionado));
       setProductoSeleccionado('');
+      setBusquedaProducto('');
       setProductoInfo(null);
+      setMostrarDropdown(false);
       cargar();
       proveedores.productosDisponibles(Number(id)).then(setProductosDisponibles).catch(() => setProductosDisponibles([]));
     } catch (e: unknown) {
@@ -77,6 +100,12 @@ export default function ProveedorDetalle() {
     } finally {
       setAsociando(false);
     }
+  };
+
+  const seleccionarProducto = (p: ProductoAsoc) => {
+    setProductoSeleccionado(p.id);
+    setBusquedaProducto(`${p.marca} ${p.modelo} (${p.categoria})${p.codigo ? ` - ${p.codigo}` : ''}`);
+    setMostrarDropdown(false);
   };
 
   const desasociarProducto = async (productoId: number, nombreProd: string) => {
@@ -188,22 +217,46 @@ export default function ProveedorDetalle() {
           {puedeEditar && (
             <div className="mt-4 pt-4 border-t border-gray-200">
               <label className="block text-sm font-medium text-gray-700 mb-1">Asociar producto</label>
-              <div className="flex gap-2 flex-wrap">
-                <select
-                  value={productoSeleccionado}
-                  onChange={(e) => setProductoSeleccionado(e.target.value ? Number(e.target.value) : '')}
-                  className="border border-gray-300 rounded-md px-3 py-1.5 text-sm min-w-[200px]"
-                >
-                  <option value="">Seleccionar producto</option>
-                  {productosDisponibles.map((p) => (
-                    <option key={p.id} value={p.id}>{p.marca} {p.modelo} ({p.categoria}) {p.codigo && `- ${p.codigo}`}</option>
-                  ))}
-                </select>
+              <div className="flex gap-2 flex-wrap items-start">
+                <div ref={dropdownRef} className="relative min-w-[280px] flex-1 max-w-md">
+                  <input
+                    type="text"
+                    value={busquedaProducto}
+                    onChange={(e) => {
+                      setBusquedaProducto(e.target.value);
+                      setMostrarDropdown(true);
+                      if (!e.target.value) setProductoSeleccionado('');
+                    }}
+                    onFocus={() => productosDisponibles.length > 0 && setMostrarDropdown(true)}
+                    placeholder="Buscar por código, modelo, marca o categoría..."
+                    className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm pr-8"
+                  />
+                  {mostrarDropdown && productosFiltrados.length > 0 && (
+                    <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                      {productosFiltrados.map((p) => (
+                        <li
+                          key={p.id}
+                          role="option"
+                          aria-selected={productoSeleccionado === p.id}
+                          onClick={() => seleccionarProducto(p)}
+                          className={`px-3 py-2 text-sm cursor-pointer hover:bg-primary-50 ${productoSeleccionado === p.id ? 'bg-primary-50 text-primary-700' : ''}`}
+                        >
+                          {p.marca} {p.modelo} ({p.categoria}){p.codigo ? ` - ${p.codigo}` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {mostrarDropdown && busquedaProducto.trim() && productosFiltrados.length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full px-3 py-2 text-sm text-gray-500 bg-white border border-gray-200 rounded-md shadow-lg">
+                      No hay productos que coincidan con la búsqueda.
+                    </div>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={asociarProducto}
                   disabled={!productoSeleccionado || asociando || productosDisponibles.length === 0}
-                  className="px-3 py-1.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 text-sm"
+                  className="px-3 py-1.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 text-sm shrink-0"
                 >
                   {asociando ? 'Asociando...' : 'Asociar'}
                 </button>

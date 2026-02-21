@@ -12,7 +12,19 @@ export default function Proveedores() {
   const { confirm } = useConfirm();
   const puedeEditar = hasPermission(PERMISOS.PROVEEDORES_EDITAR);
   const [items, setItems] = useState<Proveedor[]>([]);
+  const [busqueda, setBusqueda] = useState<string>('');
   const [loading, setLoading] = useState(true);
+
+  const itemsFiltrados = busqueda.trim()
+    ? items.filter((p) => {
+        const q = busqueda.trim().toLowerCase();
+        const texto = [p.nombre, p.contacto, p.telefono, p.email, p.direccion, p.terminos_pago]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return texto.includes(q);
+      })
+    : items;
 
   const cargar = () => {
     setLoading(true);
@@ -61,6 +73,16 @@ export default function Proveedores() {
         )}
       </div>
 
+      <div className="mb-4">
+        <input
+          type="search"
+          placeholder="Buscar por nombre, contacto, teléfono, email..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="w-full max-w-md border border-gray-300 rounded-md px-3 py-2 text-sm placeholder:text-gray-400"
+        />
+      </div>
+
       {loading ? (
         <p className="text-gray-500">Cargando...</p>
       ) : (
@@ -78,7 +100,7 @@ export default function Proveedores() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {items.map((p) => (
+                {itemsFiltrados.map((p) => (
                   <tr key={p.id} className={!p.activo ? 'bg-gray-50' : ''}>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.nombre}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.contacto || '-'}</td>
@@ -100,7 +122,11 @@ export default function Proveedores() {
               </tbody>
             </table>
           </div>
-          {items.length === 0 && <p className="p-6 text-center text-gray-500">No hay proveedores.</p>}
+          {(items.length === 0 || itemsFiltrados.length === 0) && (
+            <p className="p-6 text-center text-gray-500">
+              {items.length === 0 ? 'No hay proveedores.' : 'No hay proveedores que coincidan con la búsqueda.'}
+            </p>
+          )}
         </div>
       )}
     </div>
