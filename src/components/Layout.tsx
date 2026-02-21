@@ -62,8 +62,6 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [stockBajo, setStockBajo] = useState<StockBajo[]>([]);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
-  const [bannerExpanded, setBannerExpanded] = useState(true);
   const [stockBadgeOpen, setStockBadgeOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -79,10 +77,7 @@ export default function Layout() {
   }, [location.pathname]);
 
   useEffect(() => {
-    const handler = () => {
-      refrescarStockBajo();
-      setBannerDismissed(false);
-    };
+    const handler = () => refrescarStockBajo();
     window.addEventListener('stock-updated', handler);
     return () => window.removeEventListener('stock-updated', handler);
   }, []);
@@ -356,70 +351,6 @@ export default function Layout() {
           </div>
         )}
       </header>
-
-      {stockBajo.length > 0 && !bannerDismissed && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200" role="alert">
-          <div className="max-w-7xl mx-auto px-4 py-3">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3 min-w-0">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-200 text-amber-800">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                  </svg>
-                </span>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-semibold text-amber-900">
-                      {stockBajo.length} producto{stockBajo.length !== 1 ? 's' : ''} con stock bajo
-                    </p>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-800 font-medium">
-                      Requiere atención
-                    </span>
-                  </div>
-                  <p className="text-xs text-amber-800/90 mt-0.5">Stock actual igual o menor al mínimo definido. Registre entradas para reabastecer.</p>
-                  {bannerExpanded && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {stockBajo.slice(0, 4).map((s) => (
-                        <span key={s.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/80 text-xs font-medium text-amber-900 border border-amber-200/60">
-                          <span className={`inline-block w-2 h-2 rounded-full ${s.stock_actual === 0 ? 'bg-red-500' : 'bg-amber-500'}`} />
-                          {s.marca} {s.modelo}: {s.stock_actual}/{s.stock_minimo}
-                        </span>
-                      ))}
-                      {stockBajo.length > 4 && <span className="text-xs text-amber-700">+{stockBajo.length - 4} más</span>}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setBannerExpanded((e) => !e)}
-                  className="p-1.5 rounded-lg text-amber-700 hover:bg-amber-200/60 transition-colors"
-                  title={bannerExpanded ? 'Contraer' : 'Expandir'}
-                >
-                  <svg className={`w-4 h-4 transition-transform ${bannerExpanded ? '' : '-rotate-90'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                </button>
-                <NavLink to="/" className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors">
-                  Ver detalle
-                </NavLink>
-                {canInventory && (
-                  <NavLink to="/entrada" className="inline-flex items-center gap-1.5 rounded-lg bg-amber-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-900 transition-colors">
-                    Registrar entrada
-                  </NavLink>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setBannerDismissed(true)}
-                  className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-200/60 transition-colors"
-                  title="Ocultar aviso"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Outlet />
