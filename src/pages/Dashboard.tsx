@@ -129,6 +129,12 @@ export default function Dashboard() {
             <p className="text-sm text-gray-600 mt-1">Reportar defectuosos o dañados.</p>
           </Link>
         )}
+        {hasPermission(PERMISOS.ENTRADA_INVENTARIO) && (
+          <Link to="/historial-danados" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
+            <h3 className="font-semibold text-gray-900">Historial de dañados</h3>
+            <p className="text-sm text-gray-600 mt-1">Consultar productos dañados.</p>
+          </Link>
+        )}
         <Link to="/perfil" className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition">
           <h3 className="font-semibold text-gray-900">Mi perfil</h3>
           <p className="text-sm text-gray-600 mt-1">Actualizar datos de contacto.</p>

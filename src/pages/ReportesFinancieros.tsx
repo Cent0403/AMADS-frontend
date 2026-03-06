@@ -28,9 +28,11 @@ export default function ReportesFinancieros() {
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [busquedaMarca, setBusquedaMarca] = useState('');
   const [busquedaProveedor, setBusquedaProveedor] = useState('');
+  const [busquedaVendedor, setBusquedaVendedor] = useState('');
   const [mostrarDropdownProducto, setMostrarDropdownProducto] = useState(false);
   const [mostrarDropdownMarca, setMostrarDropdownMarca] = useState(false);
   const [mostrarDropdownProveedor, setMostrarDropdownProveedor] = useState(false);
+  const [mostrarDropdownVendedor, setMostrarDropdownVendedor] = useState(false);
   const [vendedores, setVendedores] = useState<{ id: number; nombre: string; apellido?: string }[]>([]);
   const [productosList, setProductosList] = useState<{ id: number; modelo: string; marca_nombre?: string; codigo?: string }[]>([]);
   const [marcasList, setMarcasList] = useState<{ id: number; nombre: string }[]>([]);
@@ -38,6 +40,7 @@ export default function ReportesFinancieros() {
   const dropdownProductoRef = useRef<HTMLDivElement>(null);
   const dropdownMarcaRef = useRef<HTMLDivElement>(null);
   const dropdownProveedorRef = useRef<HTMLDivElement>(null);
+  const dropdownVendedorRef = useRef<HTMLDivElement>(null);
   const [ventas, setVentas] = useState<ReporteVenta[]>([]);
   const [compras, setCompras] = useState<ReporteCompra[]>([]);
   const [utilidad, setUtilidad] = useState<ReporteUtilidad | null>(null);
@@ -70,18 +73,27 @@ export default function ReportesFinancieros() {
     ? proveedoresList.filter((p) => p.nombre.toLowerCase().includes(busquedaProveedor.trim().toLowerCase()))
     : proveedoresList;
 
+  const vendedoresFiltrados = busquedaVendedor.trim()
+    ? vendedores.filter((v) => {
+        const q = busquedaVendedor.trim().toLowerCase();
+        const texto = [v.nombre, v.apellido].filter(Boolean).join(' ').toLowerCase();
+        return texto.includes(q);
+      })
+    : vendedores;
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownProductoRef.current && !dropdownProductoRef.current.contains(e.target as Node)) setMostrarDropdownProducto(false);
       if (dropdownMarcaRef.current && !dropdownMarcaRef.current.contains(e.target as Node)) setMostrarDropdownMarca(false);
       if (dropdownProveedorRef.current && !dropdownProveedorRef.current.contains(e.target as Node)) setMostrarDropdownProveedor(false);
+      if (dropdownVendedorRef.current && !dropdownVendedorRef.current.contains(e.target as Node)) setMostrarDropdownVendedor(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const cargar = useCallback(async () => {
-    if (!hasPermission(PERMISOS.REPORTES_VER)) return;
+    if (!hasPermission(PERMISOS.REPORTES_VER) || !esAdmin) return;
     setLoading(true);
     setError('');
     try {
@@ -112,11 +124,13 @@ export default function ReportesFinancieros() {
     } finally {
       setLoading(false);
     }
-  }, [hasPermission, tab, desde, hasta, vendedorId, productoId, marcaId, proveedorId]);
+  }, [hasPermission, esAdmin, tab, desde, hasta, vendedorId, productoId, marcaId, proveedorId]);
 
   useEffect(() => {
-    cargar();
-  }, [cargar]);
+    if (hasPermission(PERMISOS.REPORTES_VER) && esAdmin) {
+      cargar();
+    }
+  }, [cargar, hasPermission, esAdmin]);
 
   const exportar = () => {
     if (tab === 'ventas') {
@@ -193,14 +207,47 @@ export default function ReportesFinancieros() {
             </div>
             {tab === 'ventas' && (
               <>
-                <div>
+                <div ref={dropdownVendedorRef} className="relative w-[160px]">
                   <label className="block text-xs text-gray-500 mb-1">Vendedor</label>
-                  <select value={vendedorId} onChange={(e) => setVendedorId(e.target.value ? Number(e.target.value) : '')} className="border border-gray-300 rounded-md px-3 py-2 text-sm w-[160px]">
-                    <option value="">Todos</option>
-                    {vendedores.map((v) => (
-                      <option key={v.id} value={v.id}>{v.nombre} {v.apellido || ''}</option>
-                    ))}
-                  </select>
+                  <input
+                    type="text"
+                    value={busquedaVendedor}
+                    onChange={(e) => {
+                      setBusquedaVendedor(e.target.value);
+                      setMostrarDropdownVendedor(true);
+                      if (!e.target.value) setVendedorId('');
+                    }}
+                    onFocus={() => vendedores.length > 0 && setMostrarDropdownVendedor(true)}
+                    placeholder="Buscar vendedor..."
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  />
+                  {mostrarDropdownVendedor && vendedoresFiltrados.length > 0 && (
+                    <ul className="absolute z-10 mt-1 w-full max-h-40 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                      <li
+                        role="option"
+                        onClick={() => { setVendedorId(''); setBusquedaVendedor(''); setMostrarDropdownVendedor(false); }}
+                        className="px-3 py-2 text-sm cursor-pointer hover:bg-primary-50"
+                      >
+                        Todos
+                      </li>
+                      {vendedoresFiltrados.map((v) => (
+                        <li
+                          key={v.id}
+                          role="option"
+                          aria-selected={vendedorId === v.id}
+                          onClick={() => { setVendedorId(v.id); setBusquedaVendedor(`${v.nombre} ${v.apellido || ''}`.trim()); setMostrarDropdownVendedor(false); }}
+                          className={`px-3 py-2 text-sm cursor-pointer hover:bg-primary-50 ${vendedorId === v.id ? 'bg-primary-50 text-primary-700' : ''}`}
+                        >
+                          {v.nombre} {v.apellido || ''}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {mostrarDropdownVendedor && busquedaVendedor.trim() && vendedoresFiltrados.length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full px-3 py-2 text-sm text-gray-500 bg-white border border-gray-200 rounded-md shadow-lg">
+                      No hay vendedores que coincidan.
+                    </div>
+                  )}
                 </div>
                 <div ref={dropdownMarcaRef} className="relative w-[180px]">
                   <label className="block text-xs text-gray-500 mb-1">Marca</label>

@@ -133,7 +133,7 @@ export default function Layout() {
                       type="button"
                       onClick={() => setInvDropdownOpen((o) => !o)}
                       className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        ['/entrada', '/salida', '/productos-danados'].some((p) => location.pathname.startsWith(p))
+                        ['/entrada', '/salida', '/productos-danados', '/historial-danados'].some((p) => location.pathname.startsWith(p))
                           ? 'bg-primary-600 text-white'
                           : 'text-gray-700 hover:bg-gray-100'
                       }`}
@@ -154,6 +154,9 @@ export default function Layout() {
                           </NavLink>
                           <NavLink to="/productos-danados" className={({ isActive }) => `flex items-center gap-2 px-4 py-2 text-sm ${isActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}>
                             Productos dañados
+                          </NavLink>
+                          <NavLink to="/historial-danados" className={({ isActive }) => `flex items-center gap-2 px-4 py-2 text-sm ${isActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            Historial dañados
                           </NavLink>
                         </div>
                       </>
@@ -320,6 +323,9 @@ export default function Layout() {
                   </NavLink>
                   <NavLink to="/productos-danados" className={navLinkClass}>
                     Productos dañados
+                  </NavLink>
+                  <NavLink to="/historial-danados" className={navLinkClass}>
+                    Historial dañados
                   </NavLink>
                 </>
               )}

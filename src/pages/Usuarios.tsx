@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { PERMISOS } from '../constants/permissions';
@@ -13,6 +13,7 @@ export default function Usuarios() {
   const [items, setItems] = useState<Usuario[]>([]);
   const [roles, setRoles] = useState<{ id: number; nombre: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busqueda, setBusqueda] = useState('');
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({ email: '', password: '', nombre: '', apellido: '', rol_id: 0 });
@@ -109,6 +110,23 @@ export default function Usuarios() {
 
   const rolNombre = (r: string) => r.replace(/_/g, ' ');
 
+  const itemsFiltrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((u) => {
+      const texto = [
+        u.nombre,
+        u.apellido,
+        u.email,
+        rolNombre(u.rol),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return texto.includes(q);
+    });
+  }, [items, busqueda]);
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -123,6 +141,16 @@ export default function Usuarios() {
             Nuevo usuario
           </button>
         </div>
+      </div>
+
+      <div className="mb-4">
+        <input
+          type="search"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar por nombre, correo o rol..."
+          className="w-full max-w-md border border-gray-300 rounded-md px-3 py-2 text-sm"
+        />
       </div>
 
       {loading ? (
@@ -140,7 +168,7 @@ export default function Usuarios() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {items.map((u) => (
+              {itemsFiltrados.map((u) => (
                 <tr key={u.id} className={!u.activo ? 'bg-gray-50' : ''}>
                   <td className="px-4 py-3 text-sm">{u.nombre} {u.apellido}</td>
                   <td className="px-4 py-3 text-sm">{u.email}</td>

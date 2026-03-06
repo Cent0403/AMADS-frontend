@@ -141,6 +141,11 @@ export const reportes = {
     const listParams = params ? { categoria_id: params.categoria_id, tipo_id: params.tipo_id } : undefined;
     return api<Producto[]>(`/reportes/inventario${q ? `?${q}` : ''}`).catch(() => productos.list(listParams));
   },
+  danados: (params?: { desde?: string; hasta?: string; producto_id?: number }) => {
+    const entries = params ? Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]) : [];
+    const q = entries.length ? new URLSearchParams(entries as [string, string][]).toString() : '';
+    return api<ProductoDanado[]>(`/reportes/danados${q ? `?${q}` : ''}`);
+  },
   ventas: (params?: { desde?: string; hasta?: string; vendedor_id?: number; producto_id?: number; marca_id?: number }) => {
     const entries = params ? Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]) : [];
     const q = entries.length ? new URLSearchParams(entries as [string, string][]).toString() : '';
@@ -273,4 +278,19 @@ export interface ProveedorForm {
   email?: string;
   direccion?: string;
   terminos_pago?: string;
+}
+
+export interface ProductoDanado {
+  id: number;
+  producto_id: number;
+  producto_codigo?: string;
+  producto_nombre: string;
+  marca_nombre: string;
+  modelo: string;
+  categoria_nombre: string;
+  cantidad: number;
+  motivo?: string;
+  usuario_nombre: string;
+  fecha: string;
+  created_at?: string;
 }

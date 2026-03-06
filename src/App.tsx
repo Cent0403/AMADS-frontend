@@ -9,6 +9,7 @@ import ProductoForm from './pages/ProductoForm';
 import EntradaInventario from './pages/EntradaInventario';
 import SalidaInventario from './pages/SalidaInventario';
 import ProductosDanados from './pages/ProductosDanados';
+import HistorialDanados from './pages/HistorialDanados';
 import Proveedores from './pages/Proveedores';
 import ProveedorForm from './pages/ProveedorForm';
 import ProveedorDetalle from './pages/ProveedorDetalle';
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="entrada" element={<PrivateRoute permission={PERMISOS.ENTRADA_INVENTARIO}><EntradaInventario /></PrivateRoute>} />
         <Route path="salida" element={<PrivateRoute permission={PERMISOS.ENTRADA_INVENTARIO}><SalidaInventario /></PrivateRoute>} />
         <Route path="productos-danados" element={<PrivateRoute permission={PERMISOS.ENTRADA_INVENTARIO}><ProductosDanados /></PrivateRoute>} />
+        <Route path="historial-danados" element={<PrivateRoute permission={PERMISOS.ENTRADA_INVENTARIO}><HistorialDanados /></PrivateRoute>} />
         <Route path="reporte-inventario" element={<PrivateRoute permission={PERMISOS.REPORTES_VER}><ReporteInventario /></PrivateRoute>} />
         <Route path="reportes" element={<PrivateRoute permission={PERMISOS.REPORTES_VER}><ReportesFinancieros /></PrivateRoute>} />
         <Route path="perfil" element={<PrivateRoute><Perfil /></PrivateRoute>} />

@@ -3,6 +3,7 @@ import { productos, Producto } from '../api/client';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { PERMISOS } from '../constants/permissions';
+import { Link } from 'react-router-dom';
 
 export default function ProductosDanados() {
   const { hasPermission } = useAuth();
@@ -80,7 +81,15 @@ export default function ProductosDanados() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Reportar productos dañados o defectuosos</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Reportar productos dañados o defectuosos</h1>
+        <Link
+          to="/historial-danados"
+          className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+        >
+          Ver historial
+        </Link>
+      </div>
       <p className="text-gray-600 mb-6">
         Registre productos dañados o defectuosos. El sistema descontará automáticamente la cantidad del inventario y guardará un registro con fecha y responsable.
       </p>
