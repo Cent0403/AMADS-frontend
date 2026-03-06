@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { productos, proveedores, Producto, Proveedor } from '../api/client';
 import { useToast } from '../context/ToastContext';
 
@@ -10,13 +10,50 @@ export default function EntradaInventario() {
   const [productoId, setProductoId] = useState<number | ''>('');
   const [cantidad, setCantidad] = useState<number | ''>('');
   const [proveedorId, setProveedorId] = useState<number | ''>('');
+  const [busquedaProveedor, setBusquedaProveedor] = useState('');
+  const [busquedaProducto, setBusquedaProducto] = useState('');
+  const [mostrarDropdownProveedor, setMostrarDropdownProveedor] = useState(false);
+  const [mostrarDropdownProducto, setMostrarDropdownProducto] = useState(false);
   const [observaciones, setObservaciones] = useState('');
   const [loading, setLoading] = useState(false);
+  const dropdownProveedorRef = useRef<HTMLDivElement>(null);
+  const dropdownProductoRef = useRef<HTMLDivElement>(null);
+
+  const proveedoresActivos = useMemo(
+    () => listaProveedores.filter((p) => p.activo),
+    [listaProveedores]
+  );
+
+  const proveedoresFiltrados = useMemo(() => {
+    const q = busquedaProveedor.trim().toLowerCase();
+    if (!q) return proveedoresActivos;
+    return proveedoresActivos.filter((p) => p.nombre.toLowerCase().includes(q));
+  }, [proveedoresActivos, busquedaProveedor]);
 
   const listaProductos = useMemo(
     () => allProductos.filter((p) => productosIdsProveedor.includes(p.id)),
     [allProductos, productosIdsProveedor]
   );
+
+  const productosFiltrados = useMemo(() => {
+    const q = busquedaProducto.trim().toLowerCase();
+    if (!q) return listaProductos;
+    return listaProductos.filter((p) => {
+      const texto = [
+        p.categoria_nombre,
+        p.tipo_nombre,
+        p.marca_nombre,
+        p.modelo,
+        p.medida,
+        p.color,
+        p.codigo,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return texto.includes(q);
+    });
+  }, [listaProductos, busquedaProducto]);
 
   useEffect(() => {
     productos.list({ activo: 1 }).then(setAllProductos);
@@ -24,14 +61,27 @@ export default function EntradaInventario() {
   }, []);
 
   useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownProveedorRef.current && !dropdownProveedorRef.current.contains(e.target as Node)) setMostrarDropdownProveedor(false);
+      if (dropdownProductoRef.current && !dropdownProductoRef.current.contains(e.target as Node)) setMostrarDropdownProducto(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
     if (!proveedorId) {
       setProductosIdsProveedor([]);
       setProductoId('');
+      setBusquedaProducto('');
+      setMostrarDropdownProducto(false);
       return;
     }
     proveedores.productos(Number(proveedorId)).then((prods) => {
       setProductosIdsProveedor(prods.map((p) => p.id));
       setProductoId('');
+      setBusquedaProducto('');
+      setMostrarDropdownProducto(false);
     }).catch(() => setProductosIdsProveedor([]));
   }, [proveedorId]);
 
@@ -77,39 +127,89 @@ export default function EntradaInventario() {
       <form onSubmit={handleSubmit} className="max-w-xl bg-white p-6 rounded-lg border border-gray-200 space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Proveedor *</label>
-          <select
-            value={proveedorId}
-            onChange={(e) => setProveedorId(e.target.value ? Number(e.target.value) : '')}
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
-            required
-          >
-            <option value="">Seleccionar proveedor</option>
-            {listaProveedores.filter((p) => p.activo).map((p) => (
-              <option key={p.id} value={p.id}>{p.nombre}</option>
-            ))}
-          </select>
+          <div ref={dropdownProveedorRef} className="relative">
+            <input
+              type="search"
+              value={busquedaProveedor}
+              onChange={(e) => {
+                setBusquedaProveedor(e.target.value);
+                setMostrarDropdownProveedor(true);
+                setProveedorId('');
+              }}
+              onFocus={() => setMostrarDropdownProveedor(true)}
+              placeholder="Seleccionar proveedor"
+              className="w-full border border-gray-300 rounded-md px-3 py-2"
+            />
+            {mostrarDropdownProveedor && (
+              <ul className="absolute z-10 mt-1 w-full max-h-44 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                {proveedoresFiltrados.length === 0 ? (
+                  <li className="px-3 py-2 text-sm text-gray-500">No hay proveedores que coincidan.</li>
+                ) : (
+                  proveedoresFiltrados.map((p) => (
+                    <li
+                      key={p.id}
+                      role="option"
+                      aria-selected={proveedorId === p.id}
+                      onClick={() => {
+                        setProveedorId(p.id);
+                        setBusquedaProveedor(p.nombre);
+                        setMostrarDropdownProveedor(false);
+                      }}
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-primary-50 ${proveedorId === p.id ? 'bg-primary-50 text-primary-700' : ''}`}
+                    >
+                      {p.nombre}
+                    </li>
+                  ))
+                )}
+              </ul>
+            )}
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Producto * (asociados al proveedor)</label>
-          <select
-            value={productoId}
-            onChange={(e) => setProductoId(e.target.value ? Number(e.target.value) : '')}
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
-            required
-            disabled={!proveedorId}
-          >
-            <option value="">
-              {!proveedorId ? 'Seleccione primero un proveedor' : listaProductos.length === 0 ? 'Este proveedor no tiene productos asociados' : 'Seleccionar producto'}
-            </option>
-            {listaProductos.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.categoria_nombre} · {p.tipo_nombre} · {p.marca_nombre} {p.modelo}
-                {p.medida ? ` (${p.medida})` : ''}
-                {p.color ? ` · Color: ${p.color}` : ''}
-                {' — Stock: '}{p.stock_actual}
-              </option>
-            ))}
-          </select>
+          <div ref={dropdownProductoRef} className="relative">
+            <input
+              type="search"
+              value={busquedaProducto}
+              onChange={(e) => {
+                setBusquedaProducto(e.target.value);
+                setMostrarDropdownProducto(true);
+                setProductoId('');
+              }}
+              onFocus={() => proveedorId && setMostrarDropdownProducto(true)}
+              placeholder={!proveedorId ? 'Seleccione primero un proveedor' : 'Seleccionar producto'}
+              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              disabled={!proveedorId}
+            />
+            {mostrarDropdownProducto && proveedorId && (
+              <ul className="absolute z-10 mt-1 w-full max-h-52 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                {productosFiltrados.length === 0 ? (
+                  <li className="px-3 py-2 text-sm text-gray-500">No hay productos que coincidan.</li>
+                ) : (
+                  productosFiltrados.map((p) => (
+                    <li
+                      key={p.id}
+                      role="option"
+                      aria-selected={productoId === p.id}
+                      onClick={() => {
+                        setProductoId(p.id);
+                        setBusquedaProducto(
+                          `${p.categoria_nombre} · ${p.tipo_nombre} · ${p.marca_nombre} ${p.modelo}${p.medida ? ` (${p.medida})` : ''}`
+                        );
+                        setMostrarDropdownProducto(false);
+                      }}
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-primary-50 ${productoId === p.id ? 'bg-primary-50 text-primary-700' : ''}`}
+                    >
+                      {p.categoria_nombre} · {p.tipo_nombre} · {p.marca_nombre} {p.modelo}
+                      {p.medida ? ` (${p.medida})` : ''}
+                      {p.color ? ` · Color: ${p.color}` : ''}
+                      {' — Stock: '}{p.stock_actual}
+                    </li>
+                  ))
+                )}
+              </ul>
+            )}
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad * (mayor a cero)</label>

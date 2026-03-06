@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { productos, Producto } from '../api/client';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -9,13 +9,36 @@ export default function SalidaInventario() {
   const { showToast } = useToast();
   const [allProductos, setAllProductos] = useState<Producto[]>([]);
   const [productoId, setProductoId] = useState<number | ''>('');
+  const [busquedaProducto, setBusquedaProducto] = useState('');
+  const [mostrarDropdownProducto, setMostrarDropdownProducto] = useState(false);
   const [cantidad, setCantidad] = useState<number | ''>('');
   const [motivo, setMotivo] = useState('');
   const [loading, setLoading] = useState(false);
+  const dropdownProductoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     productos.list({ activo: 1 }).then(setAllProductos);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownProductoRef.current && !dropdownProductoRef.current.contains(e.target as Node)) setMostrarDropdownProducto(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const productosFiltrados = useMemo(() => {
+    const q = busquedaProducto.trim().toLowerCase();
+    if (!q) return allProductos;
+    return allProductos.filter((p) => {
+      const texto = [p.categoria_nombre, p.tipo_nombre, p.marca_nombre, p.modelo, p.medida, p.color, p.codigo]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return texto.includes(q);
+    });
+  }, [allProductos, busquedaProducto]);
 
   const producto = useMemo(() => allProductos.find((p) => p.id === Number(productoId)), [allProductos, productoId]);
   const stockDisponible = producto?.stock_actual ?? 0;
@@ -40,6 +63,8 @@ export default function SalidaInventario() {
       showToast(`Salida registrada. Stock actualizado: ${res.stock_actual} unidades.`, 'success');
       setCantidad('');
       setMotivo('');
+      setProductoId('');
+      setBusquedaProducto('');
       productos.list({ activo: 1 }).then(setAllProductos);
       window.dispatchEvent(new CustomEvent('stock-updated'));
     } catch (err: unknown) {
@@ -63,19 +88,44 @@ export default function SalidaInventario() {
       <form onSubmit={handleSubmit} className="max-w-xl bg-white p-6 rounded-lg border border-gray-200 space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Producto *</label>
-          <select
-            value={productoId}
-            onChange={(e) => setProductoId(e.target.value ? Number(e.target.value) : '')}
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
-            required
-          >
-            <option value="">Seleccionar producto</option>
-            {allProductos.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.marca_nombre} {p.modelo} {p.medida ? `(${p.medida})` : ''} — Stock: {p.stock_actual}
-              </option>
-            ))}
-          </select>
+          <div ref={dropdownProductoRef} className="relative">
+            <input
+              type="search"
+              value={busquedaProducto}
+              onChange={(e) => {
+                setBusquedaProducto(e.target.value);
+                setMostrarDropdownProducto(true);
+                setProductoId('');
+              }}
+              onFocus={() => setMostrarDropdownProducto(true)}
+              placeholder="Seleccionar producto"
+              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              required
+            />
+            {mostrarDropdownProducto && (
+              <ul className="absolute z-10 mt-1 w-full max-h-52 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg">
+                {productosFiltrados.length === 0 ? (
+                  <li className="px-3 py-2 text-sm text-gray-500">No hay productos que coincidan.</li>
+                ) : (
+                  productosFiltrados.map((p) => (
+                    <li
+                      key={p.id}
+                      role="option"
+                      aria-selected={productoId === p.id}
+                      onClick={() => {
+                        setProductoId(p.id);
+                        setBusquedaProducto(`${p.marca_nombre} ${p.modelo}${p.medida ? ` (${p.medida})` : ''}`);
+                        setMostrarDropdownProducto(false);
+                      }}
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-primary-50 ${productoId === p.id ? 'bg-primary-50 text-primary-700' : ''}`}
+                    >
+                      {p.marca_nombre} {p.modelo} {p.medida ? `(${p.medida})` : ''} {' — Stock: '}{p.stock_actual}
+                    </li>
+                  ))
+                )}
+              </ul>
+            )}
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad * (máx. {stockDisponible})</label>
